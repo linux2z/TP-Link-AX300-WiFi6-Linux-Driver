@@ -46,4 +46,4 @@ Professional, high-performance Linux driver for the **TP-Link AX300** (AIC8800DC
 
                   ---
 
-              ## :page_facing_up: LicenseThis project is shared under the GPL License.---:star: **If this helped you, please give it a star!** :star:
+              ## :page_facing_up: LicenseThis project is shared under the GPL License.---:star: ** If this helped you, please give it a star!** :star:
