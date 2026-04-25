@@ -1,37 +1,35 @@
 #!/bin/bash
-echo "--------------------------------------------------"
-echo "TP-Link WiFi 6 (AIC8800) Automatic Installer"
-echo "--------------------------------------------------"
+echo "-------------------------------------------------"
+echo "TP-Link AX300 (AIC8800) WiFi 6 Driver Installer"
+echo "Professional Edition - Self-Contained"
+echo "-------------------------------------------------"
 
-# Check for internet
-if ! ping -c 1 google.com &>/dev/null; then
-    echo "ERROR: Internet connection required to download build tools."
-        echo "Please connect an Ethernet cable first."
-            exit 1
-            fi
+# Check for root
+if [ "\$EUID" -ne 0 ]; then
+  echo "Please run as root (use sudo)"
+  exit 1
+fi
 
-            # Install dependencies
-            sudo apt update
-            sudo apt install -y git dkms build-essential linux-headers-$(uname -r)
+# Install build dependencies
+echo "[1/4] Installing dependencies..."
+apt update && apt install -y build-essential linux-headers-\$(uname -r) bc dkms
 
-            # Cleanup old attempts
-            rm -rf ~/aic8800_temp
+# Prepare driver source
+echo "[2/4] Compiling driver..."
+cd src/drivers/aic8800/aic8800_fdrv
+make -j\$(nproc)
 
-            # Clone and Patch
-            git clone --depth 1 https://github.com/Kiborgik/aic8800dc-linux-patched.git ~/aic8800_temp
-            cd ~/aic8800_temp
+# Install driver
+echo "[3/4] Installing driver modules..."
+make install
 
-            echo "Applying patches for Kernel 6.1+..."
-            sed -i "s/memcpy(ndev->dev_addr, mac_addr, ETH_ALEN);/eth_hw_addr_set(ndev, mac_addr);/" drivers/aic8800/aic8800_fdrv/rwnx_main.c
-            sed -i "s/cfg80211_ch_switch_notify(\([^,]\+\), \&csa->chandef, 0)/cfg80211_ch_switch_notify(\1, \&csa->chandef, 0, 0)/" drivers/aic8800/aic8800_fdrv/rwnx_main.c
-            sed -i "s/cfg80211_ch_switch_started_notify(\([^,]\+\), \&csa->chandef, 0, \([^,]\+\), \([^)]\+\))/cfg80211_ch_switch_started_notify(\1, \&csa->chandef, 0, \2, \3, 0)/" drivers/aic8800/aic8800_fdrv/rwnx_main.c
+# Install firmware
+echo "[4/4] Installing firmware..."
+mkdir -p /lib/firmware/aic8800
+cp aic8800DC_firmware/*.bin /lib/firmware/aic8800/
+cp aic8800DC_firmware/*.txt /lib/firmware/aic8800/
 
-            # Install
-            sudo bash ./install.sh
-
-            echo "--------------------------------------------------"
-            echo "INSTALLATION COMPLETE!"
-            echo "Your WiFi should appear in the top-right menu now."
-            echo "--------------------------------------------------"
-            read -p "Press Enter to finish..."
-            
+echo "-------------------------------------------------"
+echo "Installation Complete!"
+echo "Please REBOOT your system or run: sudo modprobe aic8800_fdrv"
+echo "-------------------------------------------------"
